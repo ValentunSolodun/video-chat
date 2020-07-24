@@ -36,7 +36,7 @@ setInterval(() => {
   console.log(onlineUsers);
 }, 1000)
 
-getUsersNamesById = async (users) => {
+getOnlineUsersNamesById = async (users) => {
   return await Promise.all(
     _.map(onlineUsers, async u => {
       const getUserName = await Users.findOne({where: {id: u.userId}});
@@ -58,21 +58,21 @@ io.on('connection', function (socket) {
       return;
     }
     onlineUsers.push({userId, socketId: socket.id});
-    const transformedUsers = await getUsersNamesById(onlineUsers);
+    const transformedUsers = await getOnlineUsersNamesById(onlineUsers);
     this.emit('get-online-users', transformedUsers);
   });
 
   socket.on('set-offline', async (userId) => {
     const foundIndex = _.findIndex(onlineUsers, {userId});
     if (~foundIndex) onlineUsers.splice(foundIndex, 1);
-    const transformedUsers = await getUsersNamesById(onlineUsers);
+    const transformedUsers = await getOnlineUsersNamesById(onlineUsers);
     this.emit('get-online-users', transformedUsers);
   });
 
   socket.on('start-call', async (userId) => {
     const foundIndex = _.findIndex(onlineUsers, {userId});
     if (~foundIndex) {
-      opentok.createSession({mediaMode: "routed"}, function (err, session) {
+      opentok.createSession({mediaMode: "routed"}, async function (err, session) {
         if (err) {
           console.log(err);
           return
@@ -82,19 +82,18 @@ io.on('connection', function (socket) {
           sessionId: session.sessionId,
           token: session.generateToken()
         }
-        this.to(socket.id).emit('created-session', dataForSession);
-        this.to(onlineUsers[foundIndex].socketId).emit('incoming-call', dataForSession);
+        io.to(socket.id).emit('created-session', dataForSession);
+        const getUserName = await Users.findOne({where: {id: userId}});
+        io.to(onlineUsers[foundIndex].socketId).emit('incoming-call',
+          {userName: getUserName.name, ...dataForSession});
       });
     }
-    // onlineUsers.push({userId, socketId: socket.id});
-    // const transformedUsers = await getUsersNamesById(onlineUsers);
-    // this.emit('get-online-users', transformedUsers);
   });
 
   socket.on('disconnect', async () => {
     const foundIndex = _.findIndex(onlineUsers, {socketId: socket.id});
     if (~foundIndex) onlineUsers.splice(foundIndex, 1);
-    const transformedUsers = await getUsersNamesById(onlineUsers);
+    const transformedUsers = await getOnlineUsersNamesById(onlineUsers);
     this.emit('get-online-users', transformedUsers);
     console.log('user disconnected');
   });

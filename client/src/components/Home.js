@@ -8,6 +8,7 @@ import {
   TOKEN
 } from '../config';
 import _ from 'lodash';
+import VideoChat from './VideoChat';
 
 export default class App extends React.Component {
   constructor(props) {
@@ -85,7 +86,15 @@ export default class App extends React.Component {
   componentDidMount() {
     this.chat = new InitializeChat('http://localhost:3001').connect();
     this.chat.setOnline();
-    this.chat.getOnlineUsers((data) => this.setState({onlineUsers: data}));
+    this.chat.getOnlineUsers((onlineUsers) => this.setState({onlineUsers}));
+    this.chat.createdSession((dataForSession) => this.setState({
+      calling: true,
+      ...dataForSession
+    }));
+    this.chat.incomingCall((dataForSession) => this.setState({
+      incomingCall: true,
+      ...dataForSession
+    }));
     // this.sessionHelper = createSession({
     //   apiKey: API_KEY,
     //   sessionId: SESSION_ID,
@@ -127,7 +136,8 @@ export default class App extends React.Component {
   };
 
   render() {
-    const {error, connected, publishVideo} = this.state;
+    const {error, connecting, connected, session, publishVideo} = this.state;
+    console.log(this.state);
     const filteredUsers = _.filter(this.state.onlineUsers, u => u.userId !== JSON.parse(localStorage.getItem('user')).id)
     return (
       <div>
@@ -135,61 +145,42 @@ export default class App extends React.Component {
         <ul>
           {
             _.map(filteredUsers, u => {
-              return <li>{u.userName} <button onClick={() => this.chat.startCall(u.userId)}>Call</button></li>
+              return <li>{u.userName}
+                <button onClick={() => this.chat.startCall(u.userId)}>Call</button>
+              </li>
             })
           }
         </ul>
+        {
+          this.state.calling ?
+            <VideoChat apiKey={this.state.apiKey} sessionId={this.state.sessionId} token={this.state.token}/>
+            :
+            null
+        }
+        {
+          this.state.incomingCall ? (
+            <div>
+              <span>Calling from {this.state.userName}</span>
+              <button onClick={() => this.setState({incomingCall: false, calling: true})}>Pick up</button>
+              <button>Hang up</button>
+            </div>
+          ) : null
+        }
+
+        {/*<div>*/}
+        {/*  <div>Your session id: {this.state.sessionId}</div>*/}
+        {/*  <label>*/}
+        {/*    Online*/}
+        {/*    <input onClick={this.createSession} id='online' name='network' type="radio"/>*/}
+        {/*  </label>*/}
+        {/*  <label>*/}
+        {/*    Offline*/}
+        {/*    <input onClick={this.deleteSession} id='offline' name='network' type="radio"/>*/}
+        {/*  </label>*/}
+        {/*</div>*/}
+
       </div>
-      // <div>
-      //   <div>
-      //     <div>Your session id: {this.state.sessionId}</div>
-      //     <label>
-      //       Online
-      //       <input onClick={this.createSession} id='online' name='network' type="radio"/>
-      //     </label>
-      //     <label>
-      //       Offline
-      //       <input onClick={this.deleteSession} id='offline' name='network' type="radio"/>
-      //     </label>
-      //   </div>
-      //   <div>
-      //     <input type="text" placeholder='Enter sessionId'/>
-      //     <button>Call</button>
-      //   </div>
-      //   <div id="sessionStatus">Session Status: {String(connected)}</div>
-      //   {error ? (
-      //     <div className="error">
-      //       <strong>Error:</strong> {error}
-      //     </div>
-      //   ) : null}
-      //   {
-      //     connected ? (
-      //       <div>
-      //         <button id="videoButton" onClick={this.toggleVideo}>
-      //           {publishVideo ? 'Disable' : 'Enable'} Video
-      //         </button>
-      //         <OTPublisher
-      //           session={this.sessionHelper.session}
-      //           properties={{publishVideo, width: 50, height: 50,}}
-      //           onPublish={this.onPublish}
-      //           onError={this.onPublishError}
-      //           eventHandlers={this.publisherEventHandlers}
-      //         />
-      //         {this.state.streams.map(stream => {
-      //           return (
-      //             <OTSubscriber
-      //               key={stream.id}
-      //               session={this.sessionHelper.session}
-      //               stream={stream}
-      //             />
-      //           );
-      //         })}
-      //       </div>
-      //     ) : 'Loading...'
-      //   }
-      //
-      // </div>
-    );
+    )
   }
 }
 

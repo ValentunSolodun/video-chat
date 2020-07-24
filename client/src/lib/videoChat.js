@@ -26,24 +26,13 @@ class InitializeChat {
 
   incomingCall(callback) {
     this.S.on('incoming-call', dataForSession => {
-      callback(
-        this.sessionHelper = createSession({
-          apiKey: dataForSession.apiKey,
-          sessionId: dataForSession.sessionId,
-          token: dataForSession.token,
-        })
-      )
+      callback(dataForSession)
     });
   }
 
   createdSession(callback) {
-    this.S.on('get-online-users', users => callback(users))
+    this.S.on('created-session', dataForSession => callback(dataForSession))
   }
-
-  getPublisher() {
-    return <div>TEst</div>
-  }
-
 
   getOnlineUsers(callback) {
     this.S.on('get-online-users', users => callback(users))

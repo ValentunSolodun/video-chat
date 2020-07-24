@@ -1,17 +1,26 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import './index.css';
+import '@opentok/client';
+import {getCreatedSession} from './lib/api';
 import App from './App';
-import * as serviceWorker from './serviceWorker';
+import './index.css';
+
+import {
+  API_KEY,
+  SESSION_ID,
+  TOKEN
+} from './config';
 
 ReactDOM.render(
-  <>
-    <App/>
-  </>,
+  <App/>,
   document.getElementById('root')
 );
 
-// If you want your app to work offline and load faster, you can change
-// unregister() to register() below. Note this comes with some pitfalls.
-// Learn more about service workers: https://bit.ly/CRA-PWA
-serviceWorker.unregister();
+
+// if (API_KEY && TOKEN && SESSION_ID) {
+//   renderApp({
+//     apiKey: API_KEY,
+//     sessionId: SESSION_ID,
+//     token: TOKEN,
+//   });
+// }

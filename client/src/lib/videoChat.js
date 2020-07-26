@@ -12,12 +12,12 @@ class InitializeChat {
     return this;
   }
 
-  setOnline() {
-    this.S.emit('set-online', JSON.parse(localStorage.getItem('user')).id);
+  setOnline(userId) {
+    this.S.emit('set-online', userId);
   }
 
-  setOffline() {
-    this.S.emit('set-offline', JSON.parse(localStorage.getItem('user')).id)
+  setOffline(userId) {
+    this.S.emit('set-offline', userId)
   }
 
   startCall(userId) {

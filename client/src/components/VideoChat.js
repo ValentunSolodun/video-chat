@@ -2,12 +2,46 @@ import React from 'react';
 import {OTPublisher, OTSubscriber, createSession} from 'opentok-react';
 import _ from 'lodash';
 
+const ControlButtonsPublisher = ({publishVideo, publishMicro, toggleVideo, toggleMicro}) => {
+  return (
+    <div>
+      <button id="videoButton" onClick={toggleVideo}>
+        {publishVideo ? 'Disable' : 'Enable'} Video
+      </button>
+
+      <button id="audioButton" onClick={toggleMicro}>
+        {publishMicro ? 'Disable' : 'Enable'} Micro
+      </button>
+    </div>
+  )
+}
+
+const ControlButtonsSubscriber = ({publishAudio, toggleAudio}) => {
+  return (
+    <div>
+      <button id="audioButton" onClick={toggleAudio}>
+        {publishAudio ? 'Disable' : 'Enable'} Audio
+      </button>
+    </div>
+  )
+}
+
 class VideoChat extends React.Component {
 
   state = {
     streams: [],
     createdSession: false,
+    publishVideo: true,
+    publishMicro: true,
+    publishAudioSubscriber: true,
   }
+
+  constructor(props) {
+    super(props);
+    this.OTPublisherRef = React.createRef();
+    this.OTSubscriberRef = React.createRef();
+  }
+
 
   componentDidMount() {
     this.sessionHelper = createSession({
@@ -21,37 +55,83 @@ class VideoChat extends React.Component {
     this.setState({createdSession: true})
   }
 
+  toggleVideo = () => {
+    if (!this.OTPublisherRef.current) return;
+    const client1 = this.OTPublisherRef.current.getPublisher();
+    const newValue = !this.state.publishVideo;
+    client1.publishVideo(newValue)
+    this.setState({
+      publishVideo: newValue
+    })
+  }
+
+  toggleMicro = () => {
+    if (!this.OTPublisherRef.current) return;
+    const client1 = this.OTPublisherRef.current.getPublisher();
+    const newValue = !this.state.publishMicro;
+    client1.publishAudio(newValue)
+    this.setState({
+      publishMicro: newValue
+    })
+  }
+
+  toggleAudioSubscriber = () => {
+    if (!this.OTSubscriberRef.current) return;
+    const client2 = this.OTSubscriberRef.current.getSubscriber();
+    const newValue = !this.state.publishAudioSubscriber;
+    client2.setAudioVolume(!newValue ? 0 : 100)
+    this.setState({
+      publishAudioSubscriber: newValue
+    })
+  }
+
   render() {
     return (
       <>
         <div>
-          {/*<button id="videoButton" onClick={this.toggleVideo}>*/}
-          {/*  {publishVideo ? 'Disable' : 'Enable'} Video*/}
-          {/*</button>*/}
-          {
-            this.state.createdSession ? (
-              <OTPublisher
-                session={this.sessionHelper.session}
-                properties={{publishVideo: true, width: 50, height: 50,}}
-                // onPublish={this.onPublish}
-                // onError={this.onPublishError}
-                // eventHandlers={this.publisherEventHandlers}
-              />
-            ) : null
-          }
-          {
-            !_.isEmpty(this.state.streams) ? (
-              this.state.streams.map(stream => {
-                return (
-                  <OTSubscriber
-                    key={stream.id}
+          <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+            {
+              this.state.createdSession ? (
+                <div>
+                  <OTPublisher
+                    ref={this.OTPublisherRef}
                     session={this.sessionHelper.session}
-                    stream={stream}
+                    properties={{publishVideo: this.state.publishVideo, width: 300, height: 300,}}
+                    // onPublish={this.onPublish}
+                    // onError={this.onPublishError}
+                    // eventHandlers={this.publisherEventHandlers}
                   />
-                );
-              })
-            ) : 'Loading for client'
-          }
+                  <ControlButtonsPublisher
+                    publishMicro={this.state.publishMicro}
+                    publishVideo={this.state.publishVideo}
+                    toggleMicro={this.toggleMicro}
+                    toggleVideo={this.toggleVideo}
+                  />
+                </div>
+              ) : null
+            }
+            {
+              !_.isEmpty(this.state.streams) ? (
+                this.state.streams.map(stream => {
+                  return (
+                    <div>
+                      <OTSubscriber
+                        ref={this.OTSubscriberRef}
+                        key={stream.id}
+                        properties={{width: 300, height: 300}}
+                        session={this.sessionHelper.session}
+                        stream={stream}
+                      />
+                      <ControlButtonsSubscriber
+                        toggleAudio={this.toggleAudioSubscriber}
+                        publishAudio={this.state.publishAudioSubscriber}/>
+                    </div>
+
+                  );
+                })
+              ) : 'Loading for client'
+            }
+          </div>
         </div>
       </>
     )

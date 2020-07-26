@@ -1,5 +1,5 @@
 import React from 'react';
-import {OTSession, OTPublisher, OTStreams, OTSubscriber, createSession} from 'opentok-react';
+import {OTSession, OTPublisher, OTStreams, OTSubscriber, I} from 'opentok-react';
 import {getCreatedSession} from '../lib/api';
 import {InitializeChat} from '../lib/videoChat';
 import {
@@ -84,8 +84,9 @@ export default class App extends React.Component {
   }
 
   componentDidMount() {
+    const userId = JSON.parse(localStorage.getItem('user')).id;
     this.chat = new InitializeChat('http://localhost:3001').connect();
-    this.chat.setOnline();
+    this.chat.setOnline(userId);
     this.chat.getOnlineUsers((onlineUsers) => this.setState({onlineUsers}));
     this.chat.createdSession((dataForSession) => this.setState({
       calling: true,

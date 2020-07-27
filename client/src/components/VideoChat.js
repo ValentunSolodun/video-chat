@@ -140,6 +140,9 @@ class VideoChat extends React.Component {
                       <ControlButtonsSubscriber
                         toggleAudio={this.toggleAudioSubscriber}
                         publishAudio={this.state.publishAudioSubscriber}/>
+                        <div>
+                          <button onClick={this.props.onEndCall}>End call</button>
+                        </div>
                     </div>
 
                   );

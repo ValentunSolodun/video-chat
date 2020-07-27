@@ -21,59 +21,59 @@ export default class App extends React.Component {
       sessionId: SESSION_ID,
       token: TOKEN,
       streams: [],
-      connected: false,
+      clientsConnected: false,
       publishVideo: true,
     };
+    //
+    //   this.sessionEventHandlers = {
+    //     sessionConnected: () => {
+    //       this.setState({connection: 'Connected'});
+    //     },
+    //     sessionDisconnected: () => {
+    //       this.setState({connection: 'Disconnected'});
+    //     },
+    //     sessionReconnected: () => {
+    //       this.setState({connection: 'Reconnected'});
+    //     },
+    //     sessionReconnecting: () => {
+    //       this.setState({connection: 'Reconnecting'});
+    //     },
+    //   };
+    //
+    //   this.publisherEventHandlers = {
+    //     accessDenied: () => {
+    //       console.log('User denied access to media source');
+    //     },
+    //     streamCreated: () => {
+    //       console.log('Publisher stream created');
+    //     },
+    //     streamDestroyed: ({reason}) => {
+    //       console.log(`Publisher stream destroyed because: ${reason}`);
+    //     },
+    //   };
+    //
+    //   this.subscriberEventHandlers = {
+    //     videoEnabled: () => {
+    //       console.log('Subscriber video enabled');
+    //     },
+    //     videoDisabled: () => {
+    //       console.log('Subscriber video disabled');
+    //     },
+    //   };
+    // }
+    //
+    // createSession = () => {
+    //   getCreatedSession().then(data => {
+    //     this.setState({
+    //       apiKey: data.apiKey,
+    //       sessionId: data.sessionId,
+    //       token: data.token,
+    //     })
+    //   });
+    // }
 
-    this.sessionEventHandlers = {
-      sessionConnected: () => {
-        this.setState({connection: 'Connected'});
-      },
-      sessionDisconnected: () => {
-        this.setState({connection: 'Disconnected'});
-      },
-      sessionReconnected: () => {
-        this.setState({connection: 'Reconnected'});
-      },
-      sessionReconnecting: () => {
-        this.setState({connection: 'Reconnecting'});
-      },
-    };
-
-    this.publisherEventHandlers = {
-      accessDenied: () => {
-        console.log('User denied access to media source');
-      },
-      streamCreated: () => {
-        console.log('Publisher stream created');
-      },
-      streamDestroyed: ({reason}) => {
-        console.log(`Publisher stream destroyed because: ${reason}`);
-      },
-    };
-
-    this.subscriberEventHandlers = {
-      videoEnabled: () => {
-        console.log('Subscriber video enabled');
-      },
-      videoDisabled: () => {
-        console.log('Subscriber video disabled');
-      },
-    };
-  }
-
-  createSession = () => {
-    getCreatedSession().then(data => {
-      this.setState({
-        apiKey: data.apiKey,
-        sessionId: data.sessionId,
-        token: data.token,
-      })
-    });
-  }
-
-  deleteSession = () => {
-    this.setState({sessionId: ''})
+    // deleteSession = () => {
+    //   this.setState({sessionId: ''})
     // deleteSession().then(data => {
     //   this.setState({
     //     apiKey: data.apiKey,
@@ -92,10 +92,24 @@ export default class App extends React.Component {
       calling: true,
       ...dataForSession
     }));
+    this.chat.clientsConnected(() => this.setState({
+      clientsConnected: true,
+    }));
+    this.chat.disconnected(() => {
+      this.setState({
+        calling: false,
+        incomingCall: false
+      });
+    });
     this.chat.incomingCall((dataForSession) => this.setState({
       incomingCall: true,
       ...dataForSession
     }));
+    // this.chat.onError((errors) => this.setState({
+    //   incomingCall: false,
+    //   calling: false,
+    //   errors,
+    // }));
     // this.sessionHelper = createSession({
     //   apiKey: API_KEY,
     //   sessionId: SESSION_ID,
@@ -154,7 +168,7 @@ export default class App extends React.Component {
         </ul>
         {
           this.state.calling ?
-            <VideoChat apiKey={this.state.apiKey} sessionId={this.state.sessionId} token={this.state.token}/>
+            <VideoChat onEndCall={this.chat.endCall.bind(this.chat)} apiKey={this.state.apiKey} sessionId={this.state.sessionId} token={this.state.token}/>
             :
             null
         }
@@ -163,7 +177,11 @@ export default class App extends React.Component {
             <div>
               <span>Calling from {this.state.userName}</span>
               <button onClick={() => this.setState({incomingCall: false, calling: true})}>Pick up</button>
-              <button>Hang up</button>
+              <button onClick={() => {
+                this.chat.cancelCall();
+                this.setState({incomingCall: false, calling: false});
+              }}>Hang up
+              </button>
             </div>
           ) : null
         }

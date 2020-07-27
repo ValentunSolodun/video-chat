@@ -12,7 +12,23 @@ const bodyParser = require("body-parser");
 const _ = require('lodash');
 
 const opentok = new OpenTok(config.openTok.apiKey, config.openTok.secret);
-let onlineUsers = [];
+const onlineUsers = [];
+let ongoingCalls = [];
+
+// ongoingCalls = new Proxy(ongoingCalls, {
+//   set(target, prop, val) {
+//     if (_.isArray(val) && val.length === 2) {
+//       target.push(val);
+//       _.forEach(val, v => io.to(v).emit('clients-connected'));
+//       return true;
+//     } else {
+//       return false;
+//     }
+//   },
+//   deleteProperty(target, prop) {
+//     console.log(prop);
+//   },
+// });
 
 app.use(cors());
 app.use(bodyParser.urlencoded({
@@ -33,8 +49,9 @@ app.use('*', (req, res, next) => {
 });
 
 setInterval(() => {
-  console.log(onlineUsers);
-}, 1000)
+  // console.log(onlineUsers);
+  console.log(ongoingCalls);
+}, 2000)
 
 getOnlineUsersNamesById = async (users) => {
   return await Promise.all(
@@ -49,8 +66,21 @@ getOnlineUsersNamesById = async (users) => {
   )
 }
 
+const handlerConnected = (clients, io) => {
+  if (!_.isArray(clients) && clients.length !== 2) return;
+  ongoingCalls.push(clients);
+  _.forEach(clients, cl => io.to(cl).emit('clients-connected'))
+};
+
+const handlerDisconnected = (socketId, io) => {
+  const foundIndex = _.findIndex(ongoingCalls, (c) => c.includes(socketId))
+  if(!~foundIndex) return;
+  _.forEach(ongoingCalls[foundIndex], c => io.to(c).emit('disconnected'));
+  ongoingCalls.splice(foundIndex, 1);
+};
+
 io.on('connection', function (socket) {
-  console.log('user connected');
+  console.log('user connected') ;
   socket.on('set-online', async (userId) => {
     const foundIndex = _.findIndex(onlineUsers, {userId});
     if (~foundIndex) {
@@ -59,14 +89,22 @@ io.on('connection', function (socket) {
     }
     onlineUsers.push({userId, socketId: socket.id});
     const transformedUsers = await getOnlineUsersNamesById(onlineUsers);
-    this.emit('get-online-users', transformedUsers);
+    io.emit('get-online-users', transformedUsers);
   });
 
   socket.on('set-offline', async (userId) => {
     const foundIndex = _.findIndex(onlineUsers, {userId});
     if (~foundIndex) onlineUsers.splice(foundIndex, 1);
     const transformedUsers = await getOnlineUsersNamesById(onlineUsers);
-    this.emit('get-online-users', transformedUsers);
+    io.emit('get-online-users', transformedUsers);
+  });
+
+  socket.on('cancel-call', async () => {
+    handlerDisconnected(socket.id, io);
+  });
+
+  socket.on('end-call', async () => {
+    handlerDisconnected(socket.id, io);
   });
 
   socket.on('start-call', async (userId) => {
@@ -74,7 +112,7 @@ io.on('connection', function (socket) {
     if (~foundIndex) {
       opentok.createSession({mediaMode: "routed"}, async function (err, session) {
         if (err) {
-          console.log(err);
+          io.to(socket.id).emit('created-room-error');
           return
         }
         const dataForSession = {
@@ -86,6 +124,7 @@ io.on('connection', function (socket) {
         const getUserName = await Users.findOne({where: {id: userId}});
         io.to(onlineUsers[foundIndex].socketId).emit('incoming-call',
           {userName: getUserName.name, ...dataForSession});
+        handlerConnected([socket.id, onlineUsers[foundIndex].socketId], io);
       });
     }
   });
@@ -94,7 +133,8 @@ io.on('connection', function (socket) {
     const foundIndex = _.findIndex(onlineUsers, {socketId: socket.id});
     if (~foundIndex) onlineUsers.splice(foundIndex, 1);
     const transformedUsers = await getOnlineUsersNamesById(onlineUsers);
-    this.emit('get-online-users', transformedUsers);
+    io.emit('get-online-users', transformedUsers);
+    handlerDisconnected(socket.id, this);
     console.log('user disconnected');
   });
 });

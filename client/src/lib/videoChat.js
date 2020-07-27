@@ -34,12 +34,24 @@ class InitializeChat {
     this.S.on('created-session', dataForSession => callback(dataForSession))
   }
 
+  cancelCall() {
+    this.S.emit('cancel-call');
+  }
+
+  clientsConnected(callback) {
+    this.S.on('clients-connected', () => callback())
+  }
+
   getOnlineUsers(callback) {
     this.S.on('get-online-users', users => callback(users))
   }
 
-  disconnect() {
-    this.S.close();
+  endCall() {
+    this.S.emit('end-call')
+  }
+
+  disconnected(callback) {
+    this.S.on('disconnected', () => callback())
   }
 }
 

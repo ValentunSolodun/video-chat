@@ -42,6 +42,20 @@ class VideoChat extends React.Component {
     this.OTSubscriberRef = React.createRef();
   }
 
+  publisherProperties = {
+    // audioFallbackEnabled: true,
+    showControls: false,
+    width: 300,
+    height: 300
+  };
+
+  subscriberProperties = {
+    // audioFallbackEnabled: true,
+    showControls: false,
+    width: 300,
+    height: 300
+  }
+
 
   componentDidMount() {
     this.sessionHelper = createSession({
@@ -94,9 +108,10 @@ class VideoChat extends React.Component {
               this.state.createdSession ? (
                 <div>
                   <OTPublisher
+                    propertie
                     ref={this.OTPublisherRef}
                     session={this.sessionHelper.session}
-                    properties={{publishVideo: this.state.publishVideo, width: 300, height: 300,}}
+                    properties={{publishVideo: this.state.publishVideo, ...this.publisherProperties}}
                     // onPublish={this.onPublish}
                     // onError={this.onPublishError}
                     // eventHandlers={this.publisherEventHandlers}
@@ -118,7 +133,7 @@ class VideoChat extends React.Component {
                       <OTSubscriber
                         ref={this.OTSubscriberRef}
                         key={stream.id}
-                        properties={{width: 300, height: 300}}
+                        properties={this.subscriberProperties}
                         session={this.sessionHelper.session}
                         stream={stream}
                       />

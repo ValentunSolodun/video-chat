@@ -66,6 +66,8 @@ getOnlineUsersNamesById = async (users) => {
   )
 }
 
+const getPairOngoingCallUsers = (socketId) => _.findIndex(ongoingCalls, (c) => c.includes(socketId));
+
 const handlerConnected = (clients, io) => {
   if (!_.isArray(clients) && clients.length !== 2) return;
   ongoingCalls.push(clients);
@@ -73,7 +75,7 @@ const handlerConnected = (clients, io) => {
 };
 
 const handlerDisconnected = (socketId, io) => {
-  const foundIndex = _.findIndex(ongoingCalls, (c) => c.includes(socketId))
+  const foundIndex = getPairOngoingCallUsers(socketId)
   if(!~foundIndex) return;
   _.forEach(ongoingCalls[foundIndex], c => io.to(c).emit('disconnected'));
   ongoingCalls.splice(foundIndex, 1);
@@ -109,6 +111,10 @@ io.on('connection', function (socket) {
 
   socket.on('start-call', async (userId) => {
     const foundIndex = _.findIndex(onlineUsers, {userId});
+    if(~getPairOngoingCallUsers(onlineUsers[foundIndex].socketId)) {
+      //TODO: maybe emit to client that user has call already
+      return
+    }
     if (~foundIndex) {
       opentok.createSession({mediaMode: "routed"}, async function (err, session) {
         if (err) {

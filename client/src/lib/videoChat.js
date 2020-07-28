@@ -38,6 +38,10 @@ class InitializeChat {
     this.S.emit('cancel-call');
   }
 
+  clientIsBusy(callback) {
+    this.S.on('client-is-busy', () => callback())
+  }
+
   clientsConnected(callback) {
     this.S.on('clients-connected', () => callback())
   }

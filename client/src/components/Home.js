@@ -94,7 +94,15 @@ export default class App extends React.Component {
     }));
     this.chat.clientsConnected(() => this.setState({
       clientsConnected: true,
+      cancelledCall: false
     }));
+    this.chat.clientIsBusy(() => {
+      this.setState({
+        cancelledCall: true,
+        calling: false,
+      });
+    });
+
     this.chat.disconnected(() => {
       this.setState({
         calling: false,
@@ -105,22 +113,6 @@ export default class App extends React.Component {
       incomingCall: true,
       ...dataForSession
     }));
-    // this.chat.onError((errors) => this.setState({
-    //   incomingCall: false,
-    //   calling: false,
-    //   errors,
-    // }));
-    // this.sessionHelper = createSession({
-    //   apiKey: API_KEY,
-    //   sessionId: SESSION_ID,
-    //   token: TOKEN,
-    //   onStreamsUpdated: streams => {
-    //     this.setState({streams});
-    //   }
-    // });
-    // this.setState({
-    //   connected: true
-    // })
   }
 
 
@@ -183,6 +175,12 @@ export default class App extends React.Component {
               }}>Hang up
               </button>
             </div>
+          ) : null
+        }
+
+        {
+          this.state.cancelledCall ? (
+            <span>The call has canceled</span>
           ) : null
         }
 

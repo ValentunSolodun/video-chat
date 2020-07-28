@@ -112,7 +112,7 @@ io.on('connection', function (socket) {
   socket.on('cancel-call', async () => {
     const pairsOfClients = getPairOngoingCallUsers(socket.id);
     if (_.isEmpty(pairsOfClients)) return;
-    io.to(_.without(pairsOfClients, socket.id)[0]).emit('client-is-busy');
+    io.to(_.without(pairsOfClients, socket.id)[0]).emit('cancelled-call');
     handlerDisconnected(socket.id, io);
   });
 
@@ -123,6 +123,7 @@ io.on('connection', function (socket) {
   socket.on('start-call', async (userId) => {
     const foundIndex = _.findIndex(onlineUsers, {userId});
     if (!_.isEmpty(getPairOngoingCallUsers(onlineUsers[foundIndex].socketId))) {
+      io.to(socket.id).emit('client-has-ongoing-call')
       return;
     }
     if (~foundIndex) {

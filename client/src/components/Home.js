@@ -97,12 +97,18 @@ export default class App extends React.Component {
     }));
     this.chat.clientsConnected(() => this.setState({
       clientsConnected: true,
-      cancelledCall: false
+      cancelledCall: false,
+      clientHasOngoingCall: false,
     }));
-    this.chat.clientIsBusy(() => {
+    this.chat.cancelledCall(() => {
       this.setState({
         cancelledCall: true,
         calling: false,
+      });
+    });
+    this.chat.clientHasOngoingCall(() => {
+      this.setState({
+        clientHasOngoingCall: true
       });
     });
     this.chat.disconnected(() => {
@@ -184,6 +190,12 @@ export default class App extends React.Component {
         {
           this.state.cancelledCall ? (
             <span>The call has canceled</span>
+          ) : null
+        }
+
+        {
+          this.state.clientHasOngoingCall ? (
+            <span>Client has ongoing call</span>
           ) : null
         }
 

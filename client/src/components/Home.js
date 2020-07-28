@@ -85,6 +85,9 @@ export default class App extends React.Component {
 
   componentDidMount() {
     const userId = JSON.parse(localStorage.getItem('user')).id;
+    // const incomingCallAudio = new Audio('public/audio/incoming-call.mp3');
+    // incomingCallAudio.load();
+    // incomingCallAudio.play().then(r => console.log(r));
     this.chat = new InitializeChat('http://localhost:3001').connect();
     this.chat.setOnline(userId);
     this.chat.getOnlineUsers((onlineUsers) => this.setState({onlineUsers}));
@@ -102,7 +105,6 @@ export default class App extends React.Component {
         calling: false,
       });
     });
-
     this.chat.disconnected(() => {
       this.setState({
         calling: false,
@@ -148,6 +150,7 @@ export default class App extends React.Component {
     const filteredUsers = _.filter(this.state.onlineUsers, u => u.userId !== JSON.parse(localStorage.getItem('user')).id)
     return (
       <div>
+        {/*<audio autoPlay src='public/audio/incoming-call.mp3' />*/}
         Online users:
         <ul>
           {

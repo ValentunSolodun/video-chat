@@ -66,7 +66,15 @@ getOnlineUsersNamesById = async (users) => {
   )
 }
 
-const getPairOngoingCallUsers = (socketId) => _.findIndex(ongoingCalls, (c) => c.includes(socketId));
+const getIndexPairOngoingCallUsers = (socketId) => {
+  return _.findIndex(ongoingCalls, (c) => c.includes(socketId));
+};
+
+const getPairOngoingCallUsers = (socketId) => {
+  const index = _.findIndex(ongoingCalls, (c) => c.includes(socketId));
+  if (!~index) return [];
+  return ongoingCalls[index];
+};
 
 const handlerConnected = (clients, io) => {
   if (!_.isArray(clients) && clients.length !== 2) return;
@@ -75,14 +83,14 @@ const handlerConnected = (clients, io) => {
 };
 
 const handlerDisconnected = (socketId, io) => {
-  const foundIndex = getPairOngoingCallUsers(socketId)
-  if(!~foundIndex) return;
+  const foundIndex = getIndexPairOngoingCallUsers(socketId)
+  if (!~foundIndex) return;
   _.forEach(ongoingCalls[foundIndex], c => io.to(c).emit('disconnected'));
   ongoingCalls.splice(foundIndex, 1);
 };
 
 io.on('connection', function (socket) {
-  console.log('user connected') ;
+  console.log('user connected');
   socket.on('set-online', async (userId) => {
     const foundIndex = _.findIndex(onlineUsers, {userId});
     if (~foundIndex) {
@@ -102,6 +110,9 @@ io.on('connection', function (socket) {
   });
 
   socket.on('cancel-call', async () => {
+    const pairsOfClients = getPairOngoingCallUsers(socket.id);
+    if (_.isEmpty(pairsOfClients)) return;
+    io.to(_.without(pairsOfClients, socket.id)[0]).emit('client-is-busy');
     handlerDisconnected(socket.id, io);
   });
 
@@ -111,9 +122,8 @@ io.on('connection', function (socket) {
 
   socket.on('start-call', async (userId) => {
     const foundIndex = _.findIndex(onlineUsers, {userId});
-    if(~getPairOngoingCallUsers(onlineUsers[foundIndex].socketId)) {
-      //TODO: maybe emit to client that user has call already
-      return
+    if (!_.isEmpty(getPairOngoingCallUsers(onlineUsers[foundIndex].socketId))) {
+      return;
     }
     if (~foundIndex) {
       opentok.createSession({mediaMode: "routed"}, async function (err, session) {
